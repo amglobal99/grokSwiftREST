@@ -199,7 +199,10 @@ class GitHubAPIManager {
     
     
     
-  
+   // ************************* Initial Request from MasterViewControler comes in here ************************
+    // Check the completion handler there under 'loadGists'
+    //
+    //
   func fetchPublicGists(pageToLoad: String?, completionHandler:  @escaping (Result<[Gist]>, String?) -> Void) {
     if let urlString = pageToLoad {
       fetchGists(GistRouter.getAtPath(urlString), completionHandler: completionHandler)
@@ -208,6 +211,8 @@ class GitHubAPIManager {
     }
   }
   
+    
+    
   func fetchMyStarredGists(pageToLoad: String?, completionHandler:  @escaping (Result<[Gist]>, String?) -> Void) {
     if let urlString = pageToLoad {
       fetchGists(GistRouter.getAtPath(urlString), completionHandler: completionHandler)

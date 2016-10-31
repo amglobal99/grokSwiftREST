@@ -12,8 +12,7 @@ import SafariServices
 import Alamofire
 import BRYXBanner
 
-class MasterViewController: UITableViewController, LoginViewDelegate,
-SFSafariViewControllerDelegate {
+class MasterViewController: UITableViewController, LoginViewDelegate, SFSafariViewControllerDelegate {
     
     
   var safariViewController: SFSafariViewController?
@@ -67,49 +66,59 @@ SFSafariViewControllerDelegate {
   
   func loadInitialData() {
     isLoading = true
-    GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler = { error in
-      guard error == nil else {
-        print(error!)
-        self.isLoading = false
-        switch error! {
-        case GitHubAPIManagerError.network(let innerError as NSError):
-          if innerError.domain != NSURLErrorDomain {
-            break
-          }
-          if innerError.code == NSURLErrorNotConnectedToInternet {
-            let path:Path =
-              [.Public, .Starred, .MyGists][self.gistSegmentedControl.selectedSegmentIndex]
-            if let archived:[Gist] = PersistenceManager.loadArray(path: path) {
-              self.gists = archived
-            } else {
-              self.gists = [] // don't have any saved gists
-            }
-            self.tableView.reloadData()
+    GitHubAPIManager.sharedInstance.OAuthTokenCompletionHandler =
+        { error in
+              guard error == nil else
+                  {
+                        print(error!)
+                        self.isLoading = false
+                        switch error! {
+                        case GitHubAPIManagerError.network(let innerError as NSError):
+                          if innerError.domain != NSURLErrorDomain {
+                            break
+                          }
+                          if innerError.code == NSURLErrorNotConnectedToInternet {
+                            let path:Path =
+                              [.Public, .Starred, .MyGists][self.gistSegmentedControl.selectedSegmentIndex]
+                            if let archived:[Gist] = PersistenceManager.loadArray(path: path) {
+                              self.gists = archived
+                            } else {
+                              self.gists = [] // don't have any saved gists
+                            }
+                            self.tableView.reloadData()
+                            
+                            self.showNotConnectedBanner()
+                            return
+                          }
+                        default:
+                          break
+                        } // end switch
+                        
+                        // Something went wrong, try again
+                        self.showOAuthLoginView()
+                        return
+                  } // end guard error = nil
+              
+                      if let _ = self.safariViewController {
+                        self.dismiss(animated: false) {}
+                      }
+                    
+                      self.loadGists(urlToLoad: nil)
             
-            self.showNotConnectedBanner()
-            return
-          }
-        default:
-          break
-        }
-        
-        // Something went wrong, try again
-        self.showOAuthLoginView()
-        return
-      }
-      
-      if let _ = self.safariViewController {
-        self.dismiss(animated: false) {}
-      }
-      self.loadGists(urlToLoad: nil)
-    }
-    if (!GitHubAPIManager.sharedInstance.hasOAuthToken()) {
-      showOAuthLoginView()
-      return
-    }
-    loadGists(urlToLoad: nil)
-  }
+            } // end closure
+    
+    
+    
+            if (!GitHubAPIManager.sharedInstance.hasOAuthToken()) {
+              showOAuthLoginView()
+              return
+            }
+            loadGists(urlToLoad: nil)
+  } // end func
+    
   
+    
+    
   func showOAuthLoginView() {
     GitHubAPIManager.sharedInstance.isLoadingOAuthToken = true
     let storyboard = UIStoryboard(name: "Main", bundle: Bundle.main)
@@ -122,64 +131,71 @@ SFSafariViewControllerDelegate {
     self.present(loginVC, animated: true, completion: nil)
   }
   
+    
+    
+    // *********** load Gists ************************************
   func loadGists(urlToLoad: String?) {
+    
     self.isLoading = true
-    let completionHandler: (Result<[Gist]>, String?) -> Void = {
-      (result, nextPage) in
-      self.isLoading = false
-      self.nextPageURLString = nextPage
-      
-      // tell refresh control it can stop showing up now
-      if self.refreshControl != nil,
-        self.refreshControl!.isRefreshing {
-        self.refreshControl?.endRefreshing()
-      }
-      
-      guard result.error == nil else {
-        self.handleLoadGistsError(result.error!)
-        return
-      }
-      
-      guard let fetchedGists = result.value else {
-        print("no gists fetched")
-        return
-      }
-      
-      if urlToLoad == nil {
-        // empty out the gists because we're not loading another page
-        self.gists = []
-      }
-      
-      self.gists += fetchedGists
-      
-      let path:Path = [.Public, .Starred, .MyGists][self.gistSegmentedControl.selectedSegmentIndex]
-      let success = PersistenceManager.saveArray(arrayToSave: self.gists, path: path)
-      if !success {
-        self.showOfflineSaveFailedBanner()
-      }
-      
-      let now = Date()
-      let updateString = "Last Updated at " + self.dateFormatter.string(from: now)
-      self.refreshControl?.attributedTitle = NSAttributedString(string: updateString)
-      
-      self.tableView.reloadData()
-    }
+    
+    let completionHandler: (Result<[Gist]>, String?) -> Void =
+        {
+                  (result, nextPage) in
+                  self.isLoading = false
+                  self.nextPageURLString = nextPage
+                  
+                  // tell refresh control it can stop showing up now
+                  if self.refreshControl != nil,
+                    self.refreshControl!.isRefreshing {
+                    self.refreshControl?.endRefreshing()
+                  }
+            
+                // make sure there is no error in result
+                  guard result.error == nil else {
+                    self.handleLoadGistsError(result.error!)
+                    return
+                  }
+                  
+                  guard let fetchedGists = result.value else {
+                    print("no gists fetched")
+                    return
+                  }
+                  
+                  if urlToLoad == nil {
+                    self.gists = []   // empty out the gists because we're not loading another page
+                  }
+                  
+                  self.gists += fetchedGists
+                  
+                  let path:Path = [.Public, .Starred, .MyGists][self.gistSegmentedControl.selectedSegmentIndex]
+                  let success = PersistenceManager.saveArray(arrayToSave: self.gists, path: path)
+                  if !success {
+                    self.showOfflineSaveFailedBanner()
+                  }
+                  
+                  let now = Date()
+                  let updateString = "Last Updated at " + self.dateFormatter.string(from: now)
+                  self.refreshControl?.attributedTitle = NSAttributedString(string: updateString)
+                  
+                  self.tableView.reloadData()
+        }  // end completionHandler closure
+    
     
     switch gistSegmentedControl.selectedSegmentIndex {
-    case 0:
-      GitHubAPIManager.sharedInstance.fetchPublicGists(pageToLoad: urlToLoad,
-                                                       completionHandler: completionHandler)
-    case 1:
-      GitHubAPIManager.sharedInstance.fetchMyStarredGists(pageToLoad: urlToLoad,
-                                                          completionHandler: completionHandler)
-    case 2:
-      GitHubAPIManager.sharedInstance.fetchMyGists(pageToLoad: urlToLoad,
-                                                   completionHandler: completionHandler)
-    default:
-      print("got an index that I didn't expect for selectedSegmentIndex")
+        case 0:
+          GitHubAPIManager.sharedInstance.fetchPublicGists(pageToLoad: urlToLoad,   completionHandler: completionHandler)
+        case 1:
+          GitHubAPIManager.sharedInstance.fetchMyStarredGists(pageToLoad: urlToLoad,  completionHandler: completionHandler)
+        case 2:
+          GitHubAPIManager.sharedInstance.fetchMyGists(pageToLoad: urlToLoad,    completionHandler: completionHandler)
+        default:
+          print("got an index that I didn't expect for selectedSegmentIndex")
     }
-  }
+    
+  } // end func
   
+    
+    
   func handleLoadGistsError(_ error: Error) {
     print(error)
     nextPageURLString = nil
