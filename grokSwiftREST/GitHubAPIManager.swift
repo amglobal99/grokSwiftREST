@@ -93,10 +93,12 @@ class GitHubAPIManager {
   
     
   func swapAuthCodeForToken(code: String) {
+    
     let getTokenPath: String = "https://github.com/login/oauth/access_token"
     let tokenParams = ["client_id": clientID, "client_secret": clientSecret,
                        "code": code]
     let jsonHeader = ["Accept": "application/json"]
+    
     Alamofire.request(getTokenPath, method: .post, parameters: tokenParams,
                       encoding: URLEncoding.default, headers: jsonHeader)
       .responseJSON { response in
@@ -194,9 +196,11 @@ class GitHubAPIManager {
         }
     }
   }
+    
+    
+    
   
-  func fetchPublicGists(pageToLoad: String?, completionHandler:
-    @escaping (Result<[Gist]>, String?) -> Void) {
+  func fetchPublicGists(pageToLoad: String?, completionHandler:  @escaping (Result<[Gist]>, String?) -> Void) {
     if let urlString = pageToLoad {
       fetchGists(GistRouter.getAtPath(urlString), completionHandler: completionHandler)
     } else {
@@ -204,8 +208,7 @@ class GitHubAPIManager {
     }
   }
   
-  func fetchMyStarredGists(pageToLoad: String?, completionHandler:
-    @escaping (Result<[Gist]>, String?) -> Void) {
+  func fetchMyStarredGists(pageToLoad: String?, completionHandler:  @escaping (Result<[Gist]>, String?) -> Void) {
     if let urlString = pageToLoad {
       fetchGists(GistRouter.getAtPath(urlString), completionHandler: completionHandler)
     } else {
@@ -214,8 +217,7 @@ class GitHubAPIManager {
   }
   
     
-  func fetchMyGists(pageToLoad: String?, completionHandler:
-    @escaping (Result<[Gist]>, String?) -> Void) {
+  func fetchMyGists(pageToLoad: String?, completionHandler:   @escaping (Result<[Gist]>, String?) -> Void) {
     if let urlString = pageToLoad {
       fetchGists(GistRouter.getAtPath(urlString), completionHandler: completionHandler)
     } else {
@@ -224,8 +226,8 @@ class GitHubAPIManager {
   }
   
     
-  func fetchGists(_ urlRequest: URLRequestConvertible,
-                  completionHandler: @escaping (Result<[Gist]>, String?) -> Void) {
+  func fetchGists(_ urlRequest: URLRequestConvertible,  completionHandler: @escaping (Result<[Gist]>, String?) -> Void) {
+    
     Alamofire.request(urlRequest)
       .responseJSON { response in
         if let urlResponse = response.response,
@@ -364,7 +366,10 @@ class GitHubAPIManager {
     }
   }
   
+    
+    // ******** convert Respons to a Gist array   ******************************
   private func gistArrayFromResponse(response: DataResponse<Any>) -> Result<[Gist]> {
+    
     guard response.result.error == nil else {
       print(response.result.error!)
       return .failure(GitHubAPIManagerError.network(error: response.result.error!))
@@ -373,8 +378,7 @@ class GitHubAPIManager {
     // make sure we got JSON and it's an array
     guard let jsonArray = response.result.value as? [[String: Any]] else {
       print("didn't get array of gists object as JSON from API")
-      return .failure(GitHubAPIManagerError.objectSerialization(reason:
-        "Did not get JSON dictionary in response"))
+      return .failure(GitHubAPIManagerError.objectSerialization(reason: "Did not get JSON dictionary in response"))
     }
     
     // check for "message" errors in the JSON because this API does that
@@ -393,6 +397,9 @@ class GitHubAPIManager {
     return .success(gists)
   }
   
+    
+    
+    
   func checkUnauthorized(urlResponse: HTTPURLResponse) -> (Error?) {
     if (urlResponse.statusCode == 401) {
       self.OAuthToken = nil
