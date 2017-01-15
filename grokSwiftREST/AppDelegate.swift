@@ -14,6 +14,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
   var window: UIWindow?
 
   func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+    
+    
+    print("App didFinishLaunching ....")
+    
+    
+    
     // Override point for customization after application launch.
     let splitViewController = self.window!.rootViewController as! UISplitViewController
     let navigationController = splitViewController.viewControllers[splitViewController.viewControllers.count-1] as! UINavigationController
@@ -65,6 +71,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
   }
   
   func application(_ application: UIApplication, handleOpen url: URL) -> Bool {
+    
+    print("handleURl.......")
+    
+    
+    
     GitHubAPIManager.sharedInstance.processOAuthStep1Response(url)
     return true
   }

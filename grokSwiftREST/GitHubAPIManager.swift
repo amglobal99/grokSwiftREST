@@ -373,6 +373,8 @@ class GitHubAPIManager {
   
     
     // ******** convert Respons to a Gist array   ******************************
+    //
+    //
   private func gistArrayFromResponse(response: DataResponse<Any>) -> Result<[Gist]> {
     
     guard response.result.error == nil else {
